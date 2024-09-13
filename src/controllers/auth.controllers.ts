@@ -121,7 +121,15 @@ const loginUser: RequestHandler = asyncHandler(async (req, res) => {
 
 // ---------- LOGOUT USER ----------------
 const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
-    res.send("Logout User")
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .clearCookie('accessToken', {
+            httpOnly: true,
+            secure: false,
+        })
+        .json({
+            message: "Logout successfully",
+        })
 })
 
 export {
