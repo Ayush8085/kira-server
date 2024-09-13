@@ -1,11 +1,11 @@
 import asyncHandler from "express-async-handler";
 import { RequestHandler } from "express";
-import { registerObject } from "../utils/zod.objects";
+import { loginObject, registerObject } from "../utils/zod.objects";
 import bcrypt from "bcryptjs";
 import { SALT_ROUNDS } from "../config";
 import prisma from "../prisma.client";
 import { createAccessToken } from "../utils/jwt.tokens";
-import { HTTP_BAD_REQUEST, HTTP_CREATED } from "../utils/http.status";
+import { HTTP_BAD_REQUEST, HTTP_CREATED, HTTP_OK } from "../utils/http.status";
 
 // ---------- REGISTER USER ----------------
 const registerUser: RequestHandler = asyncHandler(async (req, res) => {
@@ -71,7 +71,52 @@ const registerUser: RequestHandler = asyncHandler(async (req, res) => {
 
 // ---------- LOGIN USER ----------------
 const loginUser: RequestHandler = asyncHandler(async (req, res) => {
-    res.send("Login User")
+    // INPUT VALIDATION
+    const { success } = loginObject.safeParse(req.body);
+    if (!success) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Invalid data");
+    }
+
+    // DESTRUCTURE DATA
+    const { email, password } = req.body;
+
+    // CHECK IF USER EXISTS
+    const user = await prisma.user.findUnique({
+        where: {
+            email,
+        }
+    });
+    if (!user) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("User does not exist");
+    }
+
+    // COMPARE PASSWORD
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Wrong password");
+    }
+
+    // CREATE TOKEN
+    const accessToken = createAccessToken({ userId: user.id });
+    console.log("accessToken: ", accessToken);
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: false,
+        })
+        .json({
+            message: "Login successfully",
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+            },
+        })
 })
 
 // ---------- LOGOUT USER ----------------
