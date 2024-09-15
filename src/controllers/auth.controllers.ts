@@ -4,7 +4,7 @@ import { loginObject, registerObject } from "../utils/zod.objects";
 import bcrypt from "bcryptjs";
 import { SALT_ROUNDS } from "../config";
 import prisma from "../prisma.client";
-import { createAccessToken } from "../utils/jwt.tokens";
+import { createAccessToken, createRefreshToken } from "../utils/jwt.tokens";
 import { HTTP_BAD_REQUEST, HTTP_CREATED, HTTP_OK } from "../utils/http.status";
 
 // ---------- REGISTER USER ----------------
@@ -51,11 +51,17 @@ const registerUser: RequestHandler = asyncHandler(async (req, res) => {
 
     // CREATE TOKEN
     const accessToken = createAccessToken({ userId: user.id });
+    const refreshToken = createRefreshToken({ userId: user.id });
     console.log("accessToken: ", accessToken);
+    console.log("refreshToken: ", refreshToken);
 
     // SEND RESPONSE
     res.status(HTTP_CREATED)
         .cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: false,
+        })
+        .cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: false,
         })
@@ -101,11 +107,17 @@ const loginUser: RequestHandler = asyncHandler(async (req, res) => {
 
     // CREATE TOKEN
     const accessToken = createAccessToken({ userId: user.id });
+    const refreshToken = createRefreshToken({ userId: user.id });
     console.log("accessToken: ", accessToken);
+    console.log("refreshToken: ", refreshToken);
 
     // SEND RESPONSE
     res.status(HTTP_OK)
         .cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: false,
+        })
+        .cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: false,
         })
@@ -127,13 +139,29 @@ const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
             httpOnly: true,
             secure: false,
         })
+        .clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: false,
+        })
         .json({
             message: "Logout successfully",
         })
 })
 
+// ---------- GET USER ----------------
+const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    // SEND RESPONSE
+    res.status(HTTP_OK).json({
+        user,
+    })
+})
+
+// ---------- EXPORTS ----------------
 export {
     loginUser,
     registerUser,
     logoutUser,
+    getLoggedInUser,
 }
