@@ -2,10 +2,11 @@ import asyncHandler from "express-async-handler";
 import { RequestHandler } from "express";
 import { loginObject, registerObject } from "../utils/zod.objects";
 import bcrypt from "bcryptjs";
-import { SALT_ROUNDS } from "../config";
+import { REFRESH_TOKEN_SECRET, SALT_ROUNDS } from "../config";
 import prisma from "../prisma.client";
 import { createAccessToken, createRefreshToken } from "../utils/jwt.tokens";
 import { HTTP_BAD_REQUEST, HTTP_CREATED, HTTP_OK } from "../utils/http.status";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 // ---------- REGISTER USER ----------------
 const registerUser: RequestHandler = asyncHandler(async (req, res) => {
@@ -158,10 +159,36 @@ const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
     })
 })
 
+// ---------- REFRESH TOKEN ----------------
+const getRefreshToken: RequestHandler = asyncHandler(async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Refresh token not found");
+    }
+    // VERIFY REFRESH TOKEN
+    const { userId } = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as JwtPayload;
+
+    // CREATE NEW ACCESS TOKEN
+    const accessToken = createAccessToken({ userId });
+    console.log("accessToken: ", accessToken);
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: false,
+        })
+        .json({
+            message: "Refresh token successfully",
+        })
+})
+
 // ---------- EXPORTS ----------------
 export {
     loginUser,
     registerUser,
     logoutUser,
     getLoggedInUser,
+    getRefreshToken,
 }
