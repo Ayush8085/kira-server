@@ -53,17 +53,21 @@ const registerUser: RequestHandler = asyncHandler(async (req, res) => {
     // CREATE TOKEN
     const accessToken = createAccessToken({ userId: user.id });
     const refreshToken = createRefreshToken({ userId: user.id });
-    console.log("accessToken: ", accessToken);
-    console.log("refreshToken: ", refreshToken);
 
     // SEND RESPONSE
     res.status(HTTP_CREATED)
         .cookie('accessToken', accessToken, {
+            path: "/",
             httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            sameSite: "none",
             secure: false,
         })
         .cookie('refreshToken', refreshToken, {
+            path: "/",
             httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            sameSite: "none",
             secure: false,
         })
         .json({
@@ -109,21 +113,27 @@ const loginUser: RequestHandler = asyncHandler(async (req, res) => {
     // CREATE TOKEN
     const accessToken = createAccessToken({ userId: user.id });
     const refreshToken = createRefreshToken({ userId: user.id });
-    console.log("accessToken: ", accessToken);
-    console.log("refreshToken: ", refreshToken);
 
     // SEND RESPONSE
     res.status(HTTP_OK)
         .cookie('accessToken', accessToken, {
+            path: "/",
             httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            sameSite: "none",
             secure: false,
         })
         .cookie('refreshToken', refreshToken, {
+            path: "/",
             httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            sameSite: "none",
             secure: false,
         })
         .json({
             message: "Login successfully",
+            accessToken,
+            refreshToken,
             user: {
                 id: user.id,
                 username: user.username,
@@ -136,14 +146,8 @@ const loginUser: RequestHandler = asyncHandler(async (req, res) => {
 const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
     // SEND RESPONSE
     res.status(HTTP_OK)
-        .clearCookie('accessToken', {
-            httpOnly: true,
-            secure: false,
-        })
-        .clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: false,
-        })
+        .clearCookie('accessToken')
+        .clearCookie('refreshToken')
         .json({
             message: "Logout successfully",
         })
@@ -161,7 +165,7 @@ const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
 
 // ---------- REFRESH TOKEN ----------------
 const getRefreshToken: RequestHandler = asyncHandler(async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
+    const refreshToken: string = req.body.refreshToken;
     if (!refreshToken) {
         res.status(HTTP_BAD_REQUEST);
         throw new Error("Refresh token not found");
@@ -171,16 +175,19 @@ const getRefreshToken: RequestHandler = asyncHandler(async (req, res) => {
 
     // CREATE NEW ACCESS TOKEN
     const accessToken = createAccessToken({ userId });
-    console.log("accessToken: ", accessToken);
 
     // SEND RESPONSE
     res.status(HTTP_OK)
         .cookie('accessToken', accessToken, {
+            path: "/",
             httpOnly: true,
+            expires: new Date(Date.now() + 1000 * 86400), // 1 day
+            sameSite: "none",
             secure: false,
         })
         .json({
             message: "Refresh token successfully",
+            accessToken,
         })
 })
 
