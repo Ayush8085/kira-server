@@ -6,12 +6,17 @@ import { ACCESS_TOKEN_SECRET } from "../config";
 import prisma from "../prisma.client";
 
 export const authMiddleware: RequestHandler = asyncHandler(async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer")) {
-        res.status(HTTP_FORBIDDEN);
-        throw new Error("Not authorized");
+    // CHECK IF TOKEN EXISTS
+    let token = req.cookies.accessToken;
+
+    if (!token) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer")) {
+            res.status(HTTP_FORBIDDEN);
+            throw new Error("Not authorized");
+        }
+        token = authHeader.split(" ")[1];
     }
-    const token = authHeader.split(" ")[1];
 
     try {
         const { userId } = jwt.verify(token, ACCESS_TOKEN_SECRET) as JwtPayload;

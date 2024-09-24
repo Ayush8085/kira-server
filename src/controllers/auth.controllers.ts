@@ -61,14 +61,14 @@ const registerUser: RequestHandler = asyncHandler(async (req, res) => {
             httpOnly: true,
             expires: new Date(Date.now() + 1000 * 86400), // 1 day
             sameSite: "none",
-            secure: false,
+            secure: true,
         })
         .cookie('refreshToken', refreshToken, {
             path: "/",
             httpOnly: true,
             expires: new Date(Date.now() + 1000 * 86400), // 1 day
             sameSite: "none",
-            secure: false,
+            secure: true,
         })
         .json({
             message: "User registered successfully",
@@ -121,14 +121,14 @@ const loginUser: RequestHandler = asyncHandler(async (req, res) => {
             httpOnly: true,
             expires: new Date(Date.now() + 1000 * 86400), // 1 day
             sameSite: "none",
-            secure: false,
+            secure: true,
         })
         .cookie('refreshToken', refreshToken, {
             path: "/",
             httpOnly: true,
             expires: new Date(Date.now() + 1000 * 86400), // 1 day
             sameSite: "none",
-            secure: false,
+            secure: true,
         })
         .json({
             message: "Login successfully",
@@ -153,19 +153,22 @@ const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
-// ---------- GET USER ----------------
+// ---------- GET LOGGED IN USER ----------------
 const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
     const user = req.user;
 
     // SEND RESPONSE
     res.status(HTTP_OK).json({
+        isLoggedIn: true,
         user,
+        accessToken: req.cookies.accessToken,
     })
 })
 
 // ---------- REFRESH TOKEN ----------------
 const getRefreshToken: RequestHandler = asyncHandler(async (req, res) => {
-    const refreshToken: string = req.body.refreshToken;
+    // CHECK IF REFRESH TOKEN EXISTS
+    let refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
         res.status(HTTP_BAD_REQUEST);
         throw new Error("Refresh token not found");
@@ -183,7 +186,7 @@ const getRefreshToken: RequestHandler = asyncHandler(async (req, res) => {
             httpOnly: true,
             expires: new Date(Date.now() + 1000 * 86400), // 1 day
             sameSite: "none",
-            secure: false,
+            secure: true,
         })
         .json({
             message: "Refresh token successfully",
