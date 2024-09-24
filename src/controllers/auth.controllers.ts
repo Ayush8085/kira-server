@@ -156,6 +156,13 @@ const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
 // ---------- GET LOGGED IN USER ----------------
 const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
     const user = req.user;
+    
+    // CHECK IF USER EXISTS
+    if (!user) {
+        res.status(HTTP_BAD_REQUEST).json({
+            isLoggedIn: false,
+        })
+    }
 
     // SEND RESPONSE
     res.status(HTTP_OK).json({
