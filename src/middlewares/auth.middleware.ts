@@ -6,9 +6,10 @@ import { ACCESS_TOKEN_SECRET } from "../config";
 import prisma from "../prisma.client";
 
 export const authMiddleware: RequestHandler = asyncHandler(async (req, res, next) => {
-    // CHECK IF TOKEN EXISTS
+    // CHECK IF TOKEN EXISTS IN COOKIES
     let token = req.cookies.accessToken;
 
+    // CHECK IF TOKEN EXISTS IN HEADERS
     if (!token) {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith("Bearer")) {
