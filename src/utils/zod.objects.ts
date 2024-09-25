@@ -14,7 +14,14 @@ const loginObject = z.object({
     password: z.string().min(6).max(24),
 })
 
+// ---------- PORJECT OBJECT ----------------
+const projectObject = z.object({
+    title: z.string(),
+    key: z.string(),
+})
+
 export {
     loginObject,
     registerObject,
+    projectObject,
 }
