@@ -156,20 +156,19 @@ const logoutUser: RequestHandler = asyncHandler(async (req, res) => {
 // ---------- GET LOGGED IN USER ----------------
 const getLoggedInUser: RequestHandler = asyncHandler(async (req, res) => {
     const user = req.user;
-    
-    // CHECK IF USER EXISTS
+
+    // CHECK IF USER EXISTS AND RETURN RESPONSE
     if (!user) {
         res.status(HTTP_BAD_REQUEST).json({
             isLoggedIn: false,
         })
+    } else {
+        res.status(HTTP_OK).json({
+            isLoggedIn: true,
+            user,
+            accessToken: req.cookies.accessToken,
+        })
     }
-
-    // SEND RESPONSE
-    res.status(HTTP_OK).json({
-        isLoggedIn: true,
-        user,
-        accessToken: req.cookies.accessToken,
-    })
 })
 
 // ---------- REFRESH TOKEN ----------------
