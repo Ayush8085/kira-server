@@ -63,7 +63,13 @@ const getProjectsOfUser: RequestHandler = asyncHandler(async (req, res) => {
             }
         },
         include: {
-            owner: true,
+            owner: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                }
+            },
         }
     });
 
@@ -75,8 +81,36 @@ const getProjectsOfUser: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
+// ---------- GET PROJECT ----------------
+const getProject: RequestHandler = asyncHandler(async (req, res) => {
+    // GET PROJECT
+    const project = await prisma.project.findUnique({
+        where: {
+            id: req.params.id,
+            ownerId: req.user?.id,
+        },
+        include: {
+            owner: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                }
+            }
+        }
+    });
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Project retrieved successfully",
+            project,
+        })
+})
+
 // ---------- IMPORTS ----------------
 export {
     createProject,
     getProjectsOfUser,
+    getProject,
 }
