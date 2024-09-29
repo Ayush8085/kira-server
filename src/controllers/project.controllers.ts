@@ -26,6 +26,15 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
                     id: req.user?.id,
                 }
             }
+        },
+        include: {
+            owner: {
+                select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                }
+            }
         }
     });
 
@@ -108,9 +117,34 @@ const getProject: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
+// ---------- DELETE PROJECT ----------------
+const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
+    // DELETE FROM ADMIN TABLE
+    await prisma.admin.deleteMany({
+        where: {
+            projectId: req.params.id,
+        }
+    });
+
+    // DELETE PROJECT
+    await prisma.project.delete({
+        where: {
+            id: req.params.id,
+            ownerId: req.user?.id,
+        }
+    });
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Project deleted successfully",
+        })
+})
+
 // ---------- IMPORTS ----------------
 export {
     createProject,
     getProjectsOfUser,
     getProject,
+    deleteProject,
 }
