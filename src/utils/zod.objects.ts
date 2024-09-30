@@ -20,8 +20,18 @@ const projectObject = z.object({
     key: z.string(),
 })
 
+// ---------- ISSUE OBJECT ----------------
+const issueObject = z.object({
+    title: z.string(),
+    key: z.string(),
+    description: z.string().optional(),
+    status: z.string().optional(),
+})
+
+// ---------- EXPORT ----------------
 export {
     loginObject,
     registerObject,
     projectObject,
+    issueObject,
 }

@@ -37,6 +37,7 @@ model Project {
   ownerId String
 
   Admins Admin[]
+  Issues Issue[]
 }
 
 // ------------ PROJECT ADMINS --------------
@@ -52,4 +53,18 @@ model Admin {
   userId String
 
   @@unique([userId, projectId])
+}
+
+// ------------ ISSUE --------------
+model Issue {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  key         String
+  status      String   @default("todo")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
 }
