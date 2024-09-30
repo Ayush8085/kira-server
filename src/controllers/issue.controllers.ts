@@ -17,9 +17,11 @@ const createIssue: RequestHandler = asyncHandler(async (req, res) => {
     const { title, description, key, status } = req.body;
 
     // CHECK STATUS
-    if (status !== "todo" && status !== "inprogress" && status !== "done") {
-        res.status(HTTP_BAD_REQUEST);
-        throw new Error("Invalid status, use 'todo', 'inprogress' or 'done'");
+    if (status) {
+        if (status !== "todo" && status !== "inprogress" && status !== "done") {
+            res.status(HTTP_BAD_REQUEST);
+            throw new Error("Invalid status, use 'todo', 'inprogress' or 'done'");
+        }
     }
 
     // CHECK PROJECT
