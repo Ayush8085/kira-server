@@ -108,10 +108,55 @@ const deleteIssue: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
+// ---------- UPDATE ISSUE ----------------
+const updateIssue: RequestHandler = asyncHandler(async (req, res) => {
+    // DESTRUCTURE DATA
+    const { title, description, key, status } = req.body;
+
+    // CHECK STATUS
+    if (status) {
+        if (status !== "todo" && status !== "inprogress" && status !== "done") {
+            res.status(HTTP_BAD_REQUEST);
+            throw new Error("Invalid status, use 'todo', 'inprogress' or 'done'");
+        }
+    }
+
+    // CHECK IF ISSUE EXISTS
+    const issueExists = await prisma.issue.findUnique({
+        where: {
+            id: req.params.issueId,
+        }
+    })
+    if (!issueExists) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Issue does not exist");
+    }
+
+    // UPDATE ISSUE
+    const issue = await prisma.issue.update({
+        where: {
+            id: req.params.issueId,
+        },
+        data: {
+            title: title || issueExists.title,
+            description: description || issueExists.description,
+            status: status || issueExists.status,
+        }
+    })
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Issue updated successfully",
+            issue,
+        })
+})
+
 // ---------- EXPORTS ----------------
 export {
     createIssue,
     getIssue,
     getIssues,
     deleteIssue,
+    updateIssue,
 }
