@@ -119,12 +119,22 @@ const getProject: RequestHandler = asyncHandler(async (req, res) => {
 
 // ---------- DELETE PROJECT ----------------
 const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
-    // DELETE FROM ADMIN TABLE
-    await prisma.admin.deleteMany({
-        where: {
-            projectId: req.params.id,
-        }
-    });
+
+    // DELETE BOTH ADMIN AND ISSUE TABLES
+    await Promise.all([
+        // DELETE FROM ADMIN TABLE
+        prisma.admin.deleteMany({
+            where: {
+                projectId: req.params.id,
+            }
+        }),
+        // DELETE FROM ISSUE TABLE
+        prisma.issue.deleteMany({
+            where: {
+                projectId: req.params.id,
+            }
+        }),
+    ])
 
     // DELETE PROJECT
     await prisma.project.delete({
