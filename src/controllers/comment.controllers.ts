@@ -44,6 +44,9 @@ const getComments: RequestHandler = asyncHandler(async (req, res) => {
     const comments = await prisma.comment.findMany({
         where: {
             issueId: req.params.issueId,
+        },
+        include: {
+            user: true,
         }
     })
 

@@ -93,7 +93,6 @@ const getProject: RequestHandler = asyncHandler(async (req, res) => {
     const project = await prisma.project.findUnique({
         where: {
             id: req.params.id,
-            ownerId: req.user?.id,
         },
         include: {
             owner: {
@@ -117,6 +116,19 @@ const getProject: RequestHandler = asyncHandler(async (req, res) => {
 // ---------- DELETE PROJECT ----------------
 const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
 
+    // CHECK IF USER IS ADMIN
+    const project_admin = await prisma.projectUsers.findFirst({
+        where: {
+            userId: req.user?.id,
+            projectId: req.params.id,
+            role: "admin",
+        }
+    })
+    if (!project_admin) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Only admin can delete project");
+    }
+
     // DELETE BOTH ADMIN AND ISSUE TABLES
     await Promise.all([
         // DELETE FROM ADMIN TABLE
@@ -137,7 +149,6 @@ const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
     await prisma.project.delete({
         where: {
             id: req.params.id,
-            ownerId: req.user?.id,
         }
     });
 
