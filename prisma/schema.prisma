@@ -21,7 +21,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   Projects Project[]
-  Admins   Admin[]
+  Users    ProjectUsers[]
+  Comment  Comment[]
 }
 
 // ------------ PROJECT --------------
@@ -36,12 +37,12 @@ model Project {
   owner   User   @relation(fields: [ownerId], references: [id])
   ownerId String
 
-  Admins Admin[]
+  Users  ProjectUsers[]
   Issues Issue[]
 }
 
 // ------------ PROJECT ADMINS --------------
-model Admin {
+model ProjectUsers {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -51,6 +52,8 @@ model Admin {
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
+
+  role String @default("user") // user, admin
 
   @@unique([userId, projectId])
 }
@@ -65,6 +68,20 @@ model Issue {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
   projectId String
+  Comments  Comment[]
+}
+
+// ------------ ISSUE COMMENTS --------------
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue   Issue  @relation(fields: [issueId], references: [id])
+  issueId String
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String
 }

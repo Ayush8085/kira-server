@@ -28,10 +28,16 @@ const issueObject = z.object({
     status: z.string().optional(),
 })
 
+// ---------- COMMENT OBJECT ----------------
+const commentObject = z.object({
+    text: z.string(),
+})
+
 // ---------- EXPORT ----------------
 export {
     loginObject,
     registerObject,
     projectObject,
     issueObject,
+    commentObject,
 }

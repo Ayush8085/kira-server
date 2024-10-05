@@ -94,6 +94,13 @@ const getIssues: RequestHandler = asyncHandler(async (req, res) => {
 
 // ---------- DELETE ISSUE ----------------
 const deleteIssue: RequestHandler = asyncHandler(async (req, res) => {
+    // DELETE COMMENTS
+    await prisma.comment.deleteMany({
+        where: {
+            issueId: req.params.issueId,
+        }
+    })
+
     // DELETE ISSUE
     await prisma.issue.delete({
         where: {

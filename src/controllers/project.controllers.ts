@@ -39,7 +39,7 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
     });
 
     // ADD USER AS ADMIN TO PROJECT
-    await prisma.admin.create({
+    await prisma.projectUsers.create({
         data: {
             project: {
                 connect: {
@@ -50,9 +50,10 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
                 connect: {
                     id: req.user?.id,
                 }
-            }
+            },
+            role: "admin"
         }
-    });
+    })
 
     // SEND RESPONSE
     res.status(HTTP_CREATED)
@@ -65,22 +66,18 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
 // ---------- GET PROJECTS OF USER ----------------
 const getProjectsOfUser: RequestHandler = asyncHandler(async (req, res) => {
     // GET ALL THE PROJECTS OF THAT USER
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.projectUsers.findMany({
         where: {
-            owner: {
-                id: req.user?.id,
-            }
+            userId: req.user?.id,
         },
         include: {
-            owner: {
-                select: {
-                    id: true,
-                    username: true,
-                    email: true,
+            project: {
+                include: {
+                    owner: true,
                 }
-            },
+            }
         }
-    });
+    })
 
     // SEND RESPONSE
     res.status(HTTP_OK)
@@ -123,7 +120,7 @@ const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
     // DELETE BOTH ADMIN AND ISSUE TABLES
     await Promise.all([
         // DELETE FROM ADMIN TABLE
-        prisma.admin.deleteMany({
+        prisma.projectUsers.deleteMany({
             where: {
                 projectId: req.params.id,
             }
@@ -151,10 +148,136 @@ const deleteProject: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
+// ---------- GET PROJECT USERS ----------------
+const getProjectUser: RequestHandler = asyncHandler(async (req, res) => {
+    // GET ALL USERS
+    const users = await prisma.user.findMany({});
+
+    // GET PROJECT USERS
+    const project_users = await prisma.projectUsers.findMany({
+        where: {
+            projectId: req.params.id,
+        },
+        include: {
+            user: true
+        }
+    });
+
+    // OTHER USERS
+    const other_users = users.filter((user) => {
+        return !project_users.some((project_user) => {
+            return project_user.userId === user.id
+        })
+    })
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Users retrieved successfully",
+            project_users,
+            other_users,
+        })
+})
+
+// ---------- CHANGE ROLE ----------------
+const changeRole: RequestHandler = asyncHandler(async (req, res) => {
+    // INPUT VALIDATION
+    const { role, userId } = req.body;
+    if (role !== "admin" && role !== "user" && role !== "other") {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Invalid data, use 'admin' or 'user' or 'other'");
+    }
+
+    // CHECK IF REQUESTING USER IS ADMIN
+    const project_admin = await prisma.projectUsers.findFirst({
+        where: {
+            userId: req.user?.id,
+            projectId: req.params.id,
+            role: "admin",
+        }
+    })
+    if (!project_admin) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Only admin can change roles");
+    }
+
+    // DELETE THE USER FROM THE PROJECT
+    if (role === "other") {
+        await prisma.projectUsers.delete({
+            where: {
+                userId_projectId: {
+                    userId,
+                    projectId: req.params.projectId,
+                }
+            }
+        })
+    }
+    else {
+        // CHANGE ROLE OR ADD THE USER TO THE PROJECT
+        await prisma.projectUsers.upsert({
+            where: {
+                userId_projectId: {
+                    userId,
+                    projectId: req.params.projectId,
+                }
+            },
+            update: {
+                role
+            },
+            create: {
+                role,
+                user: {
+                    connect: {
+                        id: userId
+                    }
+                },
+                project: {
+                    connect: {
+                        id: req.params.projectId
+                    }
+                }
+            }
+        })
+    }
+
+    // --------------
+    // GET ALL USERS
+    const users = await prisma.user.findMany({});
+
+    // GET PROJECT USERS
+    const project_users = await prisma.projectUsers.findMany({
+        where: {
+            projectId: req.params.id,
+        },
+        include: {
+            user: true
+        }
+    });
+
+    // OTHER USERS
+    const other_users = users.filter((user) => {
+        return !project_users.some((project_user) => {
+            return project_user.userId === user.id
+        })
+    })
+    // --------------
+
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Role changed successfully",
+            project_users,
+            other_users,
+        })
+})
+
 // ---------- IMPORTS ----------------
 export {
     createProject,
     getProjectsOfUser,
     getProject,
     deleteProject,
+    getProjectUser,
+    changeRole,
 }
