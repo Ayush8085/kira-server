@@ -67,11 +67,19 @@ const getIssue: RequestHandler = asyncHandler(async (req, res) => {
         }
     })
 
+    // GET ISSUE ATTACHMENTS
+    const attachment = await prisma.attachment.findFirst({
+        where: {
+            issueId: req.params.issueId,
+        }
+    });
+
     // SEND RESPONSE
     res.status(HTTP_OK)
         .json({
             message: "Issue retrieved successfully",
             issue,
+            attachment,
         })
 })
 
@@ -159,6 +167,126 @@ const updateIssue: RequestHandler = asyncHandler(async (req, res) => {
         })
 })
 
+// ---------- ATTACHMENT TO ISSUE ----------------
+const attachToIssue: RequestHandler = asyncHandler(async (req, res) => {
+    // CHECK IF FILE ATTACHED
+    if (!req.file) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("No file attached");
+    }
+
+    // CHECK IF ISSUE EXISTS
+    const issueExists = await prisma.issue.findUnique({
+        where: {
+            id: req.params.issueId,
+        }
+    })
+    if (!issueExists) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Issue does not exist");
+    }
+
+    // CHECK IF PROJECT ADMIN
+    const project_admin = await prisma.projectUsers.findFirst({
+        where: {
+            userId: req.user?.id,
+            projectId: issueExists.projectId,
+            role: "admin",
+        }
+    })
+    if (!project_admin) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Only admin can attach files to issue");
+    }
+
+    // ATTACH FILE
+    const attachment = await prisma.attachment.create({
+        data: {
+            fileName: req.file.filename,
+            filePath: req.file.path,
+            issue: {
+                connect: {
+                    id: req.params.issueId,
+                }
+            },
+            user: {
+                connect: {
+                    id: req.user?.id,
+                }
+            }
+        }
+    });
+
+
+    // SEND RESPONSE
+    res.status(HTTP_CREATED)
+        .json({
+            message: "File attached to issue successfully",
+            attachment,
+        })
+})
+
+// ----------- DOWNLOAD ISSUE ATTACHMENT ----------------
+const getIssueAttachment: RequestHandler = asyncHandler(async (req, res) => {
+    // GET ISSUE ATTACHMENT
+    const attachment = await prisma.attachment.findUnique({
+        where: {
+            id: req.params.attachmentId,
+        }
+    })
+    if (!attachment) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Attachment does not exist");
+    }
+
+    // SEND RESPONSE
+    return res.download(
+        attachment?.filePath as string,
+        attachment?.fileName as string
+    );
+})
+
+// ---------- DELETE ISSUE ATTACHMENT ----------------
+const deleteIssueAttachment: RequestHandler = asyncHandler(async (req, res) => {
+    // CHECK IF ISSUE EXISTS
+    const issueExists = await prisma.issue.findUnique({
+        where: {
+            id: req.params.issueId,
+        }
+    });
+    if (!issueExists) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Issue does not exist");
+    }
+
+    // CHECK IF PROJECT ADMIN
+    const project_admin = await prisma.projectUsers.findFirst({
+        where: {
+            userId: req.user?.id,
+            projectId: issueExists.projectId,
+            role: "admin",
+        }
+    })
+    if (!project_admin) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Only admin can delete attachment");
+    }
+
+    // DELETE ISSUE ATTACHMENT
+    await prisma.attachment.delete({
+        where: {
+            id: req.params.attachmentId,
+        }
+    });
+
+    // SEND RESPONSE
+    res.status(HTTP_OK)
+        .json({
+            message: "Issue attachment deleted successfully",
+        })
+})
+
+
 // ---------- EXPORTS ----------------
 export {
     createIssue,
@@ -166,4 +294,7 @@ export {
     getIssues,
     deleteIssue,
     updateIssue,
+    attachToIssue,
+    getIssueAttachment,
+    deleteIssueAttachment,
 }
