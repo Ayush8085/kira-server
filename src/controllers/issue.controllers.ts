@@ -3,6 +3,8 @@ import { RequestHandler } from "express";
 import { issueObject } from "../utils/zod.objects";
 import { HTTP_BAD_REQUEST, HTTP_CREATED, HTTP_OK } from "../utils/http.status";
 import prisma from "../prisma.client";
+import fs from "fs";
+import path from "path";
 
 // ---------- CREATE ISSUE ----------------
 const createIssue: RequestHandler = asyncHandler(async (req, res) => {
@@ -272,12 +274,33 @@ const deleteIssueAttachment: RequestHandler = asyncHandler(async (req, res) => {
         throw new Error("Only admin can delete attachment");
     }
 
+    // GET ISSUE ATTACHMENT
+    const attachment = await prisma.attachment.findUnique({
+        where: {
+            id: req.params.attachmentId,
+        }
+    })
+    if (!attachment) {
+        res.status(HTTP_BAD_REQUEST);
+        throw new Error("Attachment does not exist");
+    }
+
     // DELETE ISSUE ATTACHMENT
     await prisma.attachment.delete({
         where: {
             id: req.params.attachmentId,
         }
     });
+
+    // DELETE THE ACTUAL FILE FROM UPLOADS FOLDER
+    const filePath = path.join(__dirname, "../../uploads", attachment.fileName);
+    fs.unlink(filePath, (err)=> {
+        if (err) {
+            console.log("Failed to delete file: ", err);
+        } else {
+            console.log("File deleted successfully from the folder itself");
+        }
+    })
 
     // SEND RESPONSE
     res.status(HTTP_OK)
