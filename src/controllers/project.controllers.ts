@@ -39,7 +39,7 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
     });
 
     // ADD USER AS ADMIN TO PROJECT
-    await prisma.projectUsers.create({
+    const admin = await prisma.projectUsers.create({
         data: {
             project: {
                 connect: {
@@ -52,6 +52,13 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
                 }
             },
             role: "admin"
+        },
+        include: {
+            project: {
+                include: {
+                    owner: true
+                }
+            }
         }
     })
 
@@ -59,7 +66,7 @@ const createProject: RequestHandler = asyncHandler(async (req, res) => {
     res.status(HTTP_CREATED)
         .json({
             message: "Project created successfully",
-            project,
+            project: admin,
         })
 })
 
@@ -90,20 +97,21 @@ const getProjectsOfUser: RequestHandler = asyncHandler(async (req, res) => {
 // ---------- GET PROJECT ----------------
 const getProject: RequestHandler = asyncHandler(async (req, res) => {
     // GET PROJECT
-    const project = await prisma.project.findUnique({
+    const project = await prisma.projectUsers.findUnique({
         where: {
-            id: req.params.id,
+            userId_projectId: {
+                userId: req.user?.id as string,
+                projectId: req.params.id,
+            }
         },
         include: {
-            owner: {
-                select: {
-                    id: true,
-                    username: true,
-                    email: true,
+            project: {
+                include: {
+                    owner: true
                 }
-            }
+            },
         }
-    });
+    })
 
     // SEND RESPONSE
     res.status(HTTP_OK)
